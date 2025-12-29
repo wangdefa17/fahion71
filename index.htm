@@ -1,326 +1,545 @@
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" name="viewport">
   <meta content="yes" name="apple-mobile-web-app-capable">
+  <meta content="yes" name="mobile-web-app-capable">
   <meta content="yes" name="apple-touch-fullscreen">
   <meta content="black" name="apple-mobile-web-app-status-bar-style">
   <meta content="320" name="MobileOptimized">
-  <title></title>
+  <meta charset="UTF-8">
+  <title>安全验证</title>
 <style>
-.container {
-        width: 100px;
-        height: 100px;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+/* ========== 基础重置 ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft Yahei", sans-serif;
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+/* ========== 验证容器 ========== */
+.verify-container {
+    text-align: center;
+    padding: 40px 20px;
+    max-width: 360px;
+    width: 90%;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.verify-container.fade-out {
+    opacity: 0;
+    transform: scale(0.9);
+    pointer-events: none;
+}
+
+/* ========== 动画图标区域 ========== */
+.animation-wrapper {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 25px;
+}
+
+/* 对勾图标 */
+.check-icon {
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, #00c853 0%, #00e676 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    animation: pulse-scale 2s ease-in-out infinite;
+    box-shadow: 0 4px 12px rgba(0, 200, 83, 0.3);
+}
+
+.check-icon svg {
+    width: 50px;
+    height: 50px;
+    fill: #ffffff;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+/* 三点旋转动画 */
+.dot-container {
+    width: 130%;
+    height: 130%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: rotate-move 2s ease-in-out infinite;
+    z-index: 2;
+}
+
+.dot {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.dot-1 {
+    background-color: #ffe386;
+    animation: dot-1-move 2s ease infinite;
+}
+
+.dot-2 {
+    background-color: #10beae;
+    animation: dot-2-move 2s ease infinite;
+}
+
+.dot-3 {
+    background-color: #f74d75;
+    animation: dot-3-move 2s ease infinite;
+}
+
+/* ========== 文字提示 ========== */
+h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+}
+
+.tip-text {
+    color: #666;
+    font-size: 14px;
+    line-height: 1.8;
+    margin-bottom: 25px;
+}
+
+.tip-text .highlight {
+    color: #00c853;
+    font-weight: 600;
+    font-size: 18px;
+}
+
+.tip-text .error {
+    color: #f44336;
+    font-weight: 600;
+}
+
+/* ========== 进入按钮 ========== */
+.enter-btn {
+    display: inline-block;
+    padding: 14px 50px;
+    background: linear-gradient(135deg, #00c853 0%, #00e676 100%);
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 200, 83, 0.3);
+    border: none;
+    outline: none;
+    letter-spacing: 1px;
+}
+
+.enter-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 200, 83, 0.4);
+}
+
+.enter-btn:active {
+    transform: translateY(0);
+}
+
+.enter-btn.disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    transform: none !important;
+}
+
+/* ========== iframe ========== */
+.content {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    border: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    display: none;
+}
+
+.content.show {
+    display: block;
+}
+
+/* ========== 动画关键帧 ========== */
+@keyframes pulse-scale {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes dot-1-move {
+    20% { transform: scale(1) }
+    45% { transform: translate(16px, 12px) scale(.45) }
+    60% { transform: translate(20px, 15px) scale(.45) }
+    80% { transform: translate(20px, 15px) scale(.45) }
+    100% { transform: translateY(0px) scale(1) }
+}
+
+@keyframes dot-2-move {
+    20% { transform: scale(1) }
+    45% { transform: translate(-16px, 12px) scale(.45) }
+    60% { transform: translate(-20px, 15px) scale(.45) }
+    80% { transform: translate(-20px, 15px) scale(.45) }
+    100% { transform: translateY(0px) scale(1) }
+}
+
+@keyframes dot-3-move {
+    20% { transform: scale(1) }
+    45% { transform: translateY(-18px) scale(.45) }
+    60% { transform: translateY(-25px) scale(.45) }
+    80% { transform: translateY(-25px) scale(.45) }
+    100% { transform: translateY(0px) scale(1) }
+}
+
+@keyframes rotate-move {
+    55% { transform: translate(-50%, -50%) rotate(0deg) }
+    80% { transform: translate(-50%, -50%) rotate(360deg) }
+    100% { transform: translate(-50%, -50%) rotate(360deg) }
+}
+
+/* ========== 响应式 ========== */
+@media (max-width: 480px) {
+    .verify-container {
+        padding: 30px 15px;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
+
+    .tip-text {
+        font-size: 13px;
+    }
+
+    .enter-btn {
+        padding: 12px 40px;
+        font-size: 15px;
+    }
+
+    .animation-wrapper {
+        width: 80px;
+        height: 80px;
+    }
+
+    .check-icon {
+        width: 80px;
+        height: 80px;
+    }
+
+    .check-icon svg {
+        width: 40px;
+        height: 40px;
     }
 
     .dot {
-        width: 15px;
-        height: 15px;
-        border-radius: 50%;
-        background-color: #000;
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        margin: auto;
+        width: 12px;
+        height: 12px;
     }
-
-    .dot-3 {
-        background-color: #f74d75;
-    }
-
-    .dot-2 {
-        background-color: #10beae;
-    }
-
-    .dot-1 {
-        background-color: #ffe386;
-    }
-
-    .dot-3 {
-        background-color: #f74d75;
-        animation: dot-3-move 2s ease infinite;
-    }
-
-    @keyframes dot-3-move {
-        20% {
-            transform: scale(1)
-        }
-
-        45% {
-            transform: translateY(-18px) scale(.45)
-        }
-
-        60% {
-            transform: translateY(-25px) scale(.45)
-        }
-
-        80% {
-            transform: translateY(-25px) scale(.45)
-        }
-
-        100% {
-            transform: translateY(0px) scale(1)
-        }
-    }
-
-    .dot-2 {
-        background-color: #10beae;
-        animation: dot-2-move 2s ease infinite;
-    }
-
-    .dot-1 {
-        background-color: #ffe386;
-        animation: dot-1-move 2s ease infinite;
-    }
-
-    @keyframes dot-2-move {
-        20% {
-            transform: scale(1)
-        }
-
-        45% {
-            transform: translate(-16px, 12px) scale(.45)
-        }
-
-        60% {
-            transform: translate(-20px, 15px) scale(.45)
-        }
-
-        80% {
-            transform: translate(-20px, 15px) scale(.45)
-        }
-
-        100% {
-            transform: translateY(0px) scale(1)
-        }
-    }
-
-    @keyframes dot-1-move {
-        20% {
-            transform: scale(1)
-        }
-
-        45% {
-            transform: translate(16px, 12px) scale(.45)
-        }
-
-        60% {
-            transform: translate(20px, 15px) scale(.45)
-        }
-
-        80% {
-            transform: translate(20px, 15px) scale(.45)
-        }
-
-        100% {
-            transform: translateY(0px) scale(1)
-        }
-    }
-
-    .container {
-        width: 100px;
-        height: 100px;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        animation: rotate-move 2s ease-in-out infinite;
-    }
-
-    @keyframes rotate-move {
-        55% {
-            transform: translate(-50%, -50%) rotate(0deg)
-        }
-
-        80% {
-            transform: translate(-50%, -50%) rotate(360deg)
-        }
-
-        100% {
-            transform: translate(-50%, -50%) rotate(360deg)
-        }
-    }
-.container {
-        width: 100px;
-        height: 100px;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
-
-    .dot {
-        width: 15px;
-        height: 15px;
-        border-radius: 50%;
-        background-color: #000;
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        margin: auto;
-    }
-
-    .dot-3 {
-        background-color: #f74d75;
-    }
-
-    .dot-2 {
-        background-color: #10beae;
-    }
-
-    .dot-1 {
-        background-color: #ffe386;
-    }
-
-    .dot-3 {
-        background-color: #f74d75;
-        animation: dot-3-move 2s ease infinite;
-    }
-
-    @keyframes dot-3-move {
-        20% {
-            transform: scale(1)
-        }
-
-        45% {
-            transform: translateY(-18px) scale(.45)
-        }
-
-        60% {
-            transform: translateY(-25px) scale(.45)
-        }
-
-        80% {
-            transform: translateY(-25px) scale(.45)
-        }
-
-        100% {
-            transform: translateY(0px) scale(1)
-        }
-    }
-
-    .dot-2 {
-        background-color: #10beae;
-        animation: dot-2-move 2s ease infinite;
-    }
-
-    .dot-1 {
-        background-color: #ffe386;
-        animation: dot-1-move 2s ease infinite;
-    }
-
-    @keyframes dot-2-move {
-        20% {
-            transform: scale(1)
-        }
-
-        45% {
-            transform: translate(-16px, 12px) scale(.45)
-        }
-
-        60% {
-            transform: translate(-20px, 15px) scale(.45)
-        }
-
-        80% {
-            transform: translate(-20px, 15px) scale(.45)
-        }
-
-        100% {
-            transform: translateY(0px) scale(1)
-        }
-    }
-
-    @keyframes dot-1-move {
-        20% {
-            transform: scale(1)
-        }
-
-        45% {
-            transform: translate(16px, 12px) scale(.45)
-        }
-
-        60% {
-            transform: translate(20px, 15px) scale(.45)
-        }
-
-        80% {
-            transform: translate(20px, 15px) scale(.45)
-        }
-
-        100% {
-            transform: translateY(0px) scale(1)
-        }
-    }
-
-    .container {
-        width: 100px;
-        height: 100px;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        animation: rotate-move 2s ease-in-out infinite;
-    }
-
-    @keyframes rotate-move {
-        55% {
-            transform: translate(-50%, -50%) rotate(0deg)
-        }
-
-        80% {
-            transform: translate(-50%, -50%) rotate(360deg)
-        }
-
-        100% {
-            transform: translate(-50%, -50%) rotate(360deg)
-        }
-    }
-   .content{height:100%;width:100%;position: fixed;left: -2px;top: -2px;}
+}
 </style>
+</head>
 <body>
 
-<div class="container">
+<!-- 验证容器 -->
+<div class="verify-container" id="verifyBox">
+    
+    <!-- 动画图标 -->
+    <div class="animation-wrapper">
+        <!-- 对勾图标 -->
+        <div class="check-icon">
+            <svg viewBox="0 0 24 24">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+            </svg>
+        </div>
+        <!-- 三点动画 -->
+        <div class="dot-container" id="dotAnim">
             <div class="dot dot-1"></div>
             <div class="dot dot-2"></div>
             <div class="dot dot-3"></div>
+        </div>
+    </div>
+
+    <!-- 标题 -->
+    <h1 id="pageTitle">安全验证通过</h1>
+
+    <!-- 提示文字 -->
+    <p class="tip-text" id="tipText">
+        正在为您跳转目标页面<br>
+        <span class="highlight" id="countdown">3</span> 秒后自动进入，或点击下方按钮
+    </p>
+
+    <!-- 进入按钮 -->
+    <button class="enter-btn" id="enterBtn">立即进入</button>
+
 </div>
- <script>
+
+<!-- iframe容器 -->
+<iframe class="content" id="targetIframe"></iframe>
+
+<script>
+// ========== 全局变量 ==========
 var urlParams = new URLSearchParams(window.location.search);
 var encodedParam = urlParams.get('c');
-var tureurl = atob(encodedParam);
-if (tureurl.includes("http")) {
-var square = document.getElementById("container");
-setTimeout(function() {
-  square.style.display = "none";
-}, 1500);
- var html='<iframe class="content" οnlοad="bindMouseWhee(this)" src='+tureurl+'></iframe>';
-  document.writeln(html);
-console.log(tureurl);
+var targetUrl = '';
+var isRedirecting = false;
+var countdownTimer = null;
+var countdownSeconds = 3;
+// 新增：防循环重定向标记（有效期10秒）
+var loopFlagKey = 'redirect_loop_' + encodeURIComponent(encodedParam || '');
+
+console.log('URL 参数 c:', encodedParam);
+
+// ========== 修复：安全Base64解码（兼容-/_替换） ==========
+function safeBase64Decode(str) {
+    if (!str) return '';
+    // 还原安全Base64的替换字符
+    str = str.replace(/-/g, '+').replace(/_/g, '/');
+    try {
+        return atob(str);
+    } catch (e) {
+        console.error('Base64解码失败:', e);
+        return '';
+    }
+}
+
+// ========== 正确的解码逻辑（解析 JSON） ==========
+if (encodedParam) {
+    try {
+        // 1. 修复：使用安全Base64解码
+        var decoded = safeBase64Decode(encodedParam);
+        if (!decoded) throw new Error('Base64解码结果为空');
+        console.log('Base64 解码后:', decoded);
+        
+        // 2. 解析 JSON
+        var data = JSON.parse(decoded);
+        console.log('JSON 解析后:', data);
+        
+        // 3. 提取 URL
+        targetUrl = data.url || '';
+        var createdTime = data.created || 0;
+        var expireDays = data.expire_days || 30;
+        
+        console.log('目标 URL:', targetUrl);
+        console.log('创建时间:', new Date(createdTime * 1000));
+        console.log('有效期:', expireDays, '天');
+        
+        // 4. 检查是否过期
+        var currentTime = Math.floor(Date.now() / 1000);
+        var elapsedDays = (currentTime - createdTime) / 86400;
+        
+        console.log('已过时间:', elapsedDays.toFixed(2), '天');
+        
+        if (expireDays < 9999 && elapsedDays > expireDays) {
+            // 链接已过期
+            console.error('链接已过期！');
+            showError('链接已过期', '该链接的 ' + expireDays + ' 天有效期已过<br>已过时间：' + elapsedDays.toFixed(1) + ' 天');
+            targetUrl = ''; // 清空 URL
+        }
+        
+        // 5. 检查是否在循环中
+        if (sessionStorage.getItem(loopFlagKey)) {
+            console.error('检测到重定向循环，切换为新窗口打开');
+            showError('跳转方式调整', '检测到循环跳转，将在新窗口打开目标链接');
+            // 替换按钮逻辑为新窗口打开
+            var enterBtn = document.getElementById('enterBtn');
+            enterBtn.textContent = '新窗口打开';
+            enterBtn.onclick = function() {
+                window.open(targetUrl, '_blank');
+            };
+            countdownSeconds = 0; // 停止倒计时
+            clearInterval(countdownTimer);
+        }
+        
+    } catch (e) {
+        console.error('解码失败:', e);
+        showError('链接格式错误', '无法解析链接数据：' + e.message);
+        targetUrl = '';
+    }
 } else {
-  console.log("nourls");
+    console.error('缺少参数 c');
+    showError('缺少参数', '链接中缺少必要的参数');
 }
-  </script>
- <script>
+
+// ========== 显示错误信息 ==========
+function showError(title, message) {
+    document.getElementById('pageTitle').textContent = title;
+    document.getElementById('tipText').innerHTML = '<span class="error">' + message + '</span>';
+    document.getElementById('enterBtn').style.display = 'none';
+    document.getElementById('dotAnim').style.display = 'none';
+}
+
+// ========== 倒计时函数 ==========
+function startCountdown() {
+    var countdownEl = document.getElementById('countdown');
+    
+    countdownTimer = setInterval(function() {
+        countdownSeconds--;
+        if (countdownEl) {
+            countdownEl.textContent = countdownSeconds;
+        }
+        
+        if (countdownSeconds <= 0) {
+            clearInterval(countdownTimer);
+            redirectToUrl();
+        }
+    }, 1000);
+}
+
+// ========== 修复：跳转函数（增加防循环+iframe隔离） ==========
+function redirectToUrl() {
+    if (isRedirecting || !targetUrl) return;
+    isRedirecting = true;
+
+    console.log('开始跳转到:', targetUrl);
+
+    // 标记循环防呆（10秒后自动清除）
+    sessionStorage.setItem(loopFlagKey, '1');
+    setTimeout(() => sessionStorage.removeItem(loopFlagKey), 10000);
+
+    // 清除定时器
+    if (countdownTimer) {
+        clearInterval(countdownTimer);
+    }
+
+    // 1. 验证容器淡出
+    var verifyBox = document.getElementById('verifyBox');
+    if (verifyBox) {
+        verifyBox.classList.add('fade-out');
+    }
+
+    // 2. 0.5秒后显示iframe（增加隔离+反防盗链）
+    setTimeout(function() {
+        var iframe = document.getElementById('targetIframe');
+        if (iframe && targetUrl) {
+            // 关键：sandbox隔离iframe，阻止重定向影响顶层页面
+            iframe.sandbox = 'allow-scripts allow-same-origin allow-forms';
+            // 反防盗链：隐藏referer
+            iframe.referrerPolicy = 'no-referrer';
+            // 监听iframe加载错误/超时
+            var iframeTimeout = setTimeout(() => {
+                console.error('iframe加载超时，切换为新窗口打开');
+                window.open(targetUrl, '_blank');
+                iframe.style.display = 'none';
+                verifyBox.classList.remove('fade-out');
+                showError('加载超时', '已为您在新窗口打开目标链接');
+            }, 8000);
+            
+            iframe.onload = function() {
+                clearTimeout(iframeTimeout);
+                bindMouseWhee(this);
+                console.log('iframe 加载完成');
+            };
+            // 加载失败时降级为新窗口
+            iframe.onerror = function() {
+                clearTimeout(iframeTimeout);
+                console.error('iframe加载失败，新窗口打开');
+                window.open(targetUrl, '_blank');
+            };
+            
+            iframe.src = targetUrl;
+            iframe.classList.add('show');
+            console.log('iframe src 已设置为:', targetUrl);
+        }
+    }, 500);
+}
+
+// ========== 初始化 ==========
+if (targetUrl && targetUrl.indexOf('http') === 0) {
+    
+    console.log('链接有效，开始初始化...');
+    
+    // 1.5秒后隐藏三点动画
+    setTimeout(function() {
+        var dotAnim = document.getElementById('dotAnim');
+        if (dotAnim) {
+            dotAnim.style.display = 'none';
+        }
+    }, 1500);
+
+    // 0.5秒后开始倒计时
+    setTimeout(function() {
+        startCountdown();
+    }, 500);
+
+    // 绑定按钮点击事件
+    var enterBtn = document.getElementById('enterBtn');
+    if (enterBtn) {
+        enterBtn.addEventListener('click', function() {
+            if (!this.classList.contains('disabled')) {
+                this.classList.add('disabled');
+                this.textContent = '跳转中...';
+                redirectToUrl();
+            }
+        });
+    }
+
+} else {
+    // 无效链接（已在上面显示错误信息）
+    console.error('链接验证失败，targetUrl:', targetUrl);
+}
+
+// ========== 鼠标滚轮兼容 ==========
 var firefox = navigator.userAgent.indexOf('Firefox') != -1;
-function MouseWheel(e,doc){
-	e.preventDefault && e.preventDefault(),e.returnValue = false;
-	var up = firefox && e.detail < 0 || e.wheelDelta > 0;
-	doc.body.scrollTop = doc.documentElement.scrollTop += up?-50:50;
+
+function MouseWheel(e, doc) {
+    e.preventDefault && e.preventDefault();
+    e.returnValue = false;
+    var up = firefox && e.detail < 0 || e.wheelDelta > 0;
+    doc.body.scrollTop = doc.documentElement.scrollTop += up ? -50 : 50;
 }
-function bindMouseWhee(ifr){
-	try{
-		var doc = ifr.contentWindow.document;
-		firefox?doc.addEventListener('DOMMouseScroll',function(e){MouseWheel(e,doc)},false):(doc.onmousewheel = function(e){MouseWheel(e||ifr.contentWindow.event,doc)});
-	}catch(e){
-		alert('跨域无法获取iframe加载document'+e);
-	}
+
+function bindMouseWhee(ifr) {
+    try {
+        var doc = ifr.contentWindow.document;
+        if (firefox) {
+            doc.addEventListener('DOMMouseScroll', function(e) {
+                MouseWheel(e, doc);
+            }, false);
+        } else {
+            doc.onmousewheel = function(e) {
+                MouseWheel(e || ifr.contentWindow.event, doc);
+            };
+        }
+    } catch (e) {
+        console.log('跨域限制，无法绑定滚轮事件');
+    }
 }
-</script> 
+</script>
+
+</body>
+</html>
